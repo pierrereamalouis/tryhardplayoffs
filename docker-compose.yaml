@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  #  start Postgres
+  postgres:
+    image: 'postgres:16.2'
+    ports:
+      - '127.0.0.1:5438:5438'
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: tryhard
+
+  #  start KeyDB
+  keydb:
+    image: 'eqalpha/keydb:latest'
+    ports:
+      - '127.0.0.1:6380:6380'
+    restart: always
