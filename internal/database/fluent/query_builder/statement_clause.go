@@ -1,5 +1,7 @@
 package fluent
 
+import "errors"
+
 /*** Open Statement Delimiter ***/
 // SELECT
 func (q *QueryBuilder) Select(fields ...string) *QueryBuilder {
@@ -96,14 +98,14 @@ func (q *QueryBuilder) Update(table string) *QueryBuilder {
 	return q
 }
 
-func (q *QueryBuilder) Set(values ...any) *QueryBuilder {
+func (q *QueryBuilder) Set(values ...any) (*QueryBuilder, error) {
 	if q.Type != Update {
 		// TODO : refactor to better handler error
-		panic("Values method can only be used with INSERT queries")
+		return nil, errors.New("values method can only be used with INSERT queries")
 	}
 
 	if len(values)%2 != 0 {
-		panic("Must have key:value pair matches")
+		return nil, errors.New("must have key:value pair matches")
 	}
 
 	// Create a map to hold the values of current set key:value pair
@@ -113,17 +115,18 @@ func (q *QueryBuilder) Set(values ...any) *QueryBuilder {
 		field, ok := values[i].(string)
 
 		if !ok {
-			panic("Key must be string")
+			return nil, errors.New("key must be string")
 		}
 
 		value := values[i+1]
 
 		setKeyValue[field] = value
+		q.UpdateSetFields = append(q.UpdateSetFields, field)
 	}
 
-	q.UpdateValues = setKeyValue
+	q.UpdateSetValues = setKeyValue
 
-	return q
+	return q, nil
 }
 
 // DELETE

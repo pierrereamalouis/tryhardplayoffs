@@ -13,20 +13,22 @@ type (
 	OrderBy   string
 
 	QueryBuilder struct {
-		Type         QueryType
-		Fields       []string
-		SelectAll    bool
-		TableName    string
-		InsertValues []map[string]any
-		UpdateValues map[string]any
-		WhereClauses []WhereClause
-		JoinClauses  []JoinClause
-		GroupBy      []string
-		Having       []WhereClause
-		OrderBy      []OrderByClause
-		Limit        int
-		Offset       int
-		Final        string
+		Type             QueryType
+		Fields           []string
+		SelectAll        bool
+		TableName        string
+		InsertValues     []map[string]any
+		UpdateSetValues  map[string]any
+		UpdateSetFields  []string
+		WhereClauses     []WhereClause
+		JoinClauses      []JoinClause
+		GroupBy          []string
+		Having           []WhereClause
+		OrderBy          []OrderByClause
+		Limit            int
+		Offset           int
+		Final            string
+		PlaceholderIndex int
 	}
 
 	WhereClause struct {
@@ -152,12 +154,6 @@ func (q *QueryBuilder) buildOpenStatement() string {
 	return openStatement
 }
 
-func (q *QueryBuilder) buildWhereClause() string {
-	var whereClause string
-
-	return whereClause
-}
-
 // help handle singular insert or multiple insert in one query
 // iterate through the InsertValues slice in order
 // to build the string after "VALUES" of the "INSERT" statement
@@ -173,7 +169,8 @@ func (q *QueryBuilder) buildInsertValues() string {
 		var rowFields []string
 
 		for index := range q.Fields {
-			rowFields = append(rowFields, fmt.Sprintf("$%d", index+1))
+			q.PlaceholderIndex = index + 1
+			rowFields = append(rowFields, fmt.Sprintf("$%d", q.PlaceholderIndex))
 		}
 
 		valuesStatement = append(valuesStatement, fmt.Sprintf("(%s)", strings.Join(rowFields, ", ")))
@@ -191,14 +188,63 @@ func (q *QueryBuilder) buildUpdateValues() string {
 	// [string]{" name = $1, age = $2 "}
 
 	var setValuesClause []string
-	var index = 1
+	// var index = 1
 
-	for key := range q.UpdateValues {
+	// for key := range q.UpdateSetValues {
 
-		setValuesClause = append(setValuesClause, fmt.Sprintf("%s = $%d", key, index))
+	// 	setValuesClause = append(setValuesClause, fmt.Sprintf("%s = $%d", key, index))
 
-		index++
+	// 	index++
+	// }
+
+	for index, field := range q.UpdateSetFields {
+		q.PlaceholderIndex = index + 1
+
+		setValuesClause = append(setValuesClause, fmt.Sprintf("%s = $%d", field, q.PlaceholderIndex))
 	}
 
 	return strings.Join(setValuesClause, ", ")
+}
+
+func (q *QueryBuilder) buildWhereClause() string {
+	var whereClauses []string
+	// var rangeOperators = []string{"BETWEEN", "NOT BETWEEN", "NOT IN", "IN"}
+
+	/* WhereClause struct {
+		Field      string
+		Operator   Operator
+		Value      any
+		MultiValue []any // For cases like BETWEEN, IN
+		Connector  Chaining
+	}*/
+
+	for _, clause := range q.WhereClauses {
+		switch clause.Operator {
+		case Between:
+			fallthrough
+		case NotBetween:
+			placeHolderOne := q.PlaceholderIndex + 1
+			placeHolderTwo := placeHolderOne + 1
+			var clauseStr string
+
+			if clause.Connector != "" {
+				clauseStr = fmt.Sprintf("%s %s %s $%d AND $%d", clause.Connector, clause.Field, clause.Operator, placeHolderOne, placeHolderTwo)
+			} else {
+				clauseStr = fmt.Sprintf("%s %s $%d AND $%d", clause.Field, clause.Operator, placeHolderOne, placeHolderTwo)
+			}
+
+			whereClauses = append(whereClauses, clauseStr)
+		case In:
+			whereClauses = append(whereClauses, fmt.Sprintf("%s IN (%s)", clause.Field, q.buildWhereInClause()))
+		}
+		// if rangeOperators. clause.Operator
+
+		// whereClause += fmt.Sprintf("%s %s ")
+	}
+
+	return strings.Join(whereClauses, " ")
+}
+
+func (q *QueryBuilder) buildWhereInClause() string {
+	return ""
 }

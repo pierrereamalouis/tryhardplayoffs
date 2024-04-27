@@ -6,6 +6,7 @@ import (
 	"reflect"
 )
 
+// set query params for API calls
 func SetQueryParams(params any, vals *url.Values) error {
 
 	paramsType := reflect.TypeOf(params)
