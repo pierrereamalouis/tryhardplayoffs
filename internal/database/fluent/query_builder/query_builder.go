@@ -1,6 +1,7 @@
-package fluent
+package querybuilder
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -80,7 +81,7 @@ const (
 	Between    Operator = "BETWEEN"
 	NotBetween Operator = "NOT BETWEEN"
 	In         Operator = "IN"
-	NotIn      Operator = "NOTIN"
+	NotIn      Operator = "NOT IN"
 
 	// Null Comparison
 	IsNull    Operator = "IS NULL"
@@ -119,21 +120,26 @@ func (q *QueryBuilder) reset() {
 
 }
 
-func (q *QueryBuilder) Build() *QueryBuilder {
+func (q *QueryBuilder) Build() error {
 
-	q.Final += q.buildOpenStatement()
+	if stmnt, err := q.buildOpenStatement(); err != nil {
+		return err
+	} else {
+		q.Final += stmnt
+	}
 
 	if len(q.WhereClauses) > 0 {
-		q.buildWhereClause()
+		fmt.Printf("where clauses: %+v", q.WhereClauses)
+		q.Final += "WHERE " + q.buildWhereClause()
 	}
 
 	q.reset()
 
 	// don't need to return q as it would be empty after q.reset()
-	return q
+	return nil
 }
 
-func (q *QueryBuilder) buildOpenStatement() string {
+func (q *QueryBuilder) buildOpenStatement() (string, error) {
 	var openStatement string
 
 	switch q.Type {
@@ -149,9 +155,11 @@ func (q *QueryBuilder) buildOpenStatement() string {
 		openStatement = fmt.Sprintf("UPDATE %s SET %s", q.TableName, q.buildUpdateValues())
 	case "DELETE":
 		openStatement = fmt.Sprintf("DELETE FROM %s ", q.TableName)
+	default:
+		return "", errors.New("query type not set")
 	}
 
-	return openStatement
+	return openStatement, nil
 }
 
 // help handle singular insert or multiple insert in one query
@@ -219,6 +227,7 @@ func (q *QueryBuilder) buildWhereClause() string {
 	}*/
 
 	for _, clause := range q.WhereClauses {
+		fmt.Printf("clause: %+v", clause.Operator)
 		switch clause.Operator {
 		case Between:
 			fallthrough
@@ -236,11 +245,15 @@ func (q *QueryBuilder) buildWhereClause() string {
 			whereClauses = append(whereClauses, clauseStr)
 		case In:
 			whereClauses = append(whereClauses, fmt.Sprintf("%s IN (%s)", clause.Field, q.buildWhereInClause()))
+		case EQ:
+			whereClauses = append(whereClauses, fmt.Sprintf("%s = $1", clause.Field))
 		}
 		// if rangeOperators. clause.Operator
 
 		// whereClause += fmt.Sprintf("%s %s ")
 	}
+
+	fmt.Printf("where clauses slice: %+v", whereClauses)
 
 	return strings.Join(whereClauses, " ")
 }

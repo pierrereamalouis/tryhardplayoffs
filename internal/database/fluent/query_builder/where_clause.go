@@ -1,4 +1,4 @@
-package fluent
+package querybuilder
 
 func (q *QueryBuilder) Where(field string, operator Operator, value any, values ...any) *QueryBuilder {
 	clause := WhereClause{Field: field, Operator: operator, Value: value}

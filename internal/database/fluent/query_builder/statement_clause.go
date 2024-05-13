@@ -1,4 +1,4 @@
-package fluent
+package querybuilder
 
 import "errors"
 
@@ -19,6 +19,8 @@ func (q *QueryBuilder) From(table string) *QueryBuilder {
 }
 
 func (q *QueryBuilder) SelectAllFrom(table string) *QueryBuilder {
+	q.Type = Select
+	q.TableName = table
 	q.SelectAll = true
 
 	return q
