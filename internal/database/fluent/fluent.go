@@ -1,6 +1,7 @@
 package fluent
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -31,6 +32,26 @@ func (f *Fluent) Collection(name string) *Collection {
 	col.TableName = name
 
 	return col
+}
+
+func (c *Collection) Insert(item map[string]any) (*Collection, error) {
+	keys := make([]string, 0, len(item))
+	values := make([]any, 0, len(item))
+	for k, v := range item {
+		keys = append(keys, k)
+		values = append(values, v)
+	}
+
+	c.QB = *new(qb.QueryBuilder)
+	c.QB.InsertInto(c.TableName).Columns(keys...).Values(values...)
+
+	return c, nil
+}
+
+func (c *Collection) Run() error {
+	_, err := c.Fluent.DB.Exec(context.Background(), c.QB.Final, c.QB.InsertValues)
+
+	return err
 }
 
 func (c *Collection) Find(cond Cond) (*Collection, error) {
@@ -90,9 +111,11 @@ func (c *Collection) Build() string {
 		fmt.Println("Error: ", err)
 	}
 
-	fmt.Printf("query builder %+v: ", c.QB)
-
 	return c.QB.Final
+}
+
+func (c *Collection) FetchOne() {
+
 }
 
 func extractOperator(CondStr string) (string, qb.Operator, error) {

@@ -5,12 +5,13 @@ services:
   postgres:
     image: 'postgres:16.2'
     ports:
-      - '127.0.0.1:5438:5438'
+      - '127.0.0.1:5448:5448'
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: tryhard
+    command: -p 5448
 
   #  start KeyDB
   keydb:
