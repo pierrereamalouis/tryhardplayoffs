@@ -9,26 +9,26 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Driver struct {
+type Session struct {
 	Config config.DatabaseConfig
 	DSN    string
 	Pool   *pgxpool.Pool
 }
 
-func (d *Driver) SetDSN() error {
-	d.DSN = fmt.Sprintf("postgres://%s:%s@%s:%d/%s",
-		d.Config.User,
-		d.Config.Password,
-		d.Config.Hostname,
-		d.Config.Port,
-		d.Config.Name,
+func (s *Session) SetDSN() error {
+	s.DSN = fmt.Sprintf("postgres://%s:%s@%s:%d/%s",
+		s.Config.User,
+		s.Config.Password,
+		s.Config.Hostname,
+		s.Config.Port,
+		s.Config.Name,
 	)
 
 	return nil
 }
 
-func (d *Driver) NewPool() (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(context.Background(), d.DSN)
+func (s *Session) NewPool() (*pgxpool.Pool, error) {
+	pool, err := pgxpool.New(context.Background(), s.DSN)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)

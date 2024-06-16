@@ -3,6 +3,7 @@ package fluent
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 type Employee struct {
@@ -26,7 +27,7 @@ func TestCollection_Find(t *testing.T) {
 	}
 }
 
-func TestCollection_Insert(t *testing.T) {
+func TestCollection_InsertQueryString(t *testing.T) {
 	fluent := new(Fluent)
 
 	collection := fluent.Collection("employees")
@@ -41,11 +42,31 @@ func TestCollection_Insert(t *testing.T) {
 	collection.Insert(employee)
 
 	expected := "INSERT INTO employees (id, name, salary) VALUES ($1, $2, $3)"
-	queryString := collection.Build()
+	queryString := collection.QB.Final
 
 	fmt.Println(queryString)
 
 	if queryString != expected {
-		t.Errorf("TestCollection_Insert failed: expected %s, got %s", expected, queryString)
+		t.Errorf("TestCollection_InsertQueryString failed: expected %s, got %s", expected, queryString)
+	}
+}
+
+func TestCollection_Insert(t *testing.T) {
+	fluent := new(Fluent)
+
+	// TODO : init container to get pgxpool instance
+	collection := fluent.Collection("nhl_teams")
+
+	nhlTeam := map[string]any{
+		"city":         "MontreaL",
+		"name":         "Canadiens",
+		"abbreviation": "MTL",
+		"created_on":   time.Now(),
+	}
+
+	_, err := collection.Insert(nhlTeam)
+
+	if err != nil {
+		t.Errorf("TestCollection_Insert failed: %s", err)
 	}
 }

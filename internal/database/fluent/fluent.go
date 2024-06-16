@@ -45,7 +45,11 @@ func (c *Collection) Insert(item map[string]any) (*Collection, error) {
 	c.QB = *new(qb.QueryBuilder)
 	c.QB.InsertInto(c.TableName).Columns(keys...).Values(values...)
 
-	return c, nil
+	c.Build()
+
+	_, err := c.Fluent.DB.Exec(context.Background(), c.QB.Final, c.QB.InsertValues)
+
+	return c, err
 }
 
 func (c *Collection) Run() error {
